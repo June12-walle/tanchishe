@@ -4,12 +4,12 @@ public class Msnake {
 
 	public static void main(String[] args) {
 		JFrame frame = new JFrame();
-		frame.setBounds(10, 10, 900, 720);	//´°¿Ú´óĞ¡
-		frame.setResizable(false);			//ÊÇ·ñ¿ÉÍÏ¶¯
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);//¹Ø±Õ°´Å¥
-		frame.add(new MPanel());			//¼ÓÈëMPanel¶ÔÏó
+		frame.setBounds(10, 10, 900, 720);	//çª—å£å¤§å°
+		frame.setResizable(false);			//æ˜¯å¦å¯æ‹–åŠ¨
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);//å…³é—­æŒ‰é’®
+		frame.add(new MPanel());			//åŠ å…¥MPanelå¯¹è±¡
 
-		frame.setVisible(true);				//Visible³öÏÖ
+		frame.setVisible(true);				//Visibleå‡ºç°
 	}
 
 }

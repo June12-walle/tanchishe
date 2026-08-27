@@ -22,7 +22,7 @@ import javax.swing.Timer;
 
 public class MPanel extends JPanel implements KeyListener, ActionListener {
 
-	ImageIcon title; // µ¼ÈëÍ¼Æ¬
+	ImageIcon title; // å¯¼å…¥å›¾ç‰‡
 	ImageIcon body;
 	ImageIcon up;
 	ImageIcon down;
@@ -34,39 +34,39 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 	int score = 0;
 	int[] snakex = new int[750];
 	int[] snakey = new int[750];
-	String fx = "R"; // ·½ÏòU, D, R, L, //´ò¿ª³ÌĞòÊ± ÉßÍ·ÏòÓÒ
-	String fxed;		//´¢´æÉÏÒ»´ÎË¢ĞÂµÄ·½Ïò
-	boolean isStarted = false;		//Ã»¿ªÊ¼
-	boolean isFailed = false;		//Ã»Ê§°Ü
-	Timer timer = new Timer(100, this); // Ê±ÖÓ£¨¶àÉÙ¼ä¸ôÊ±¼ä£¬Ê±¼äµ½ÁËÕÒË­´¦Àí
+	String fx = "R"; // æ–¹å‘U, D, R, L, //æ‰“å¼€ç¨‹åºæ—¶ è›‡å¤´å‘å³
+	String fxed;		//å‚¨å­˜ä¸Šä¸€æ¬¡åˆ·æ–°çš„æ–¹å‘
+	boolean isStarted = false;		//æ²¡å¼€å§‹
+	boolean isFailed = false;		//æ²¡å¤±è´¥
+	Timer timer = new Timer(100, this); // æ—¶é’Ÿï¼ˆå¤šå°‘é—´éš”æ—¶é—´ï¼Œæ—¶é—´åˆ°äº†æ‰¾è°å¤„ç†
 	int foodx;
 	int foody;
 	Random rand = new Random();
 	
-	//±³¾°ÒôÀÖ
+	//èƒŒæ™¯éŸ³ä¹
 	Clip bgm2;
 
 	public MPanel() {
 		loodImages();
 		initSnake();
-		this.setFocusable(true); // ¿ÉÒÔ»ñÈ¡½¹µã£¨¼üÅÌÊÂ¼ş
-		this.addKeyListener(this); // ×Ô¼º¼àÌı¼üÅÌÊÂ¼ş
+		this.setFocusable(true); // å¯ä»¥è·å–ç„¦ç‚¹ï¼ˆé”®ç›˜äº‹ä»¶
+		this.addKeyListener(this); // è‡ªå·±ç›‘å¬é”®ç›˜äº‹ä»¶
 		timer.start();
 		loodBGM();
 	}
 
-	public void paintComponent(Graphics g) { // »­±Ê
+	public void paintComponent(Graphics g) { // ç”»ç¬”
 		super.paintComponent(g);
-		this.setBackground(Color.white); // ±³¾°ÑÕÉ«
-		title.paintIcon(this, g, 25, 11); // ±êÌâ£¨»­ÔÚÄÄ£¬»­±Ê£¬x×ø±ê£¬Y×ø±ê
+		this.setBackground(Color.white); // èƒŒæ™¯é¢œè‰²
+		title.paintIcon(this, g, 25, 11); // æ ‡é¢˜ï¼ˆç”»åœ¨å“ªï¼Œç”»ç¬”ï¼Œxåæ ‡ï¼ŒYåæ ‡
 
-		g.fillRect(25, 75, 850, 600); // ÓÎÏ·»î¶¯ÇøÓò £¨x,y,¿í¶È£¬¸ß¶È
+		g.fillRect(25, 75, 850, 600); // æ¸¸æˆæ´»åŠ¨åŒºåŸŸ ï¼ˆx,y,å®½åº¦ï¼Œé«˜åº¦
 
 		g.setColor(Color.WHITE);
-		g.drawString("³¤¶È:" + len, 750, 35);
-		g.drawString("·ÖÊı:" + score, 750, 50);
+		g.drawString("é•¿åº¦:" + len, 750, 35);
+		g.drawString("åˆ†æ•°:" + score, 750, 50);
 
-		if (fx == "R") { // °´ÉßÍ·µÄ·½Ïò£¬»­
+		if (fx == "R") { // æŒ‰è›‡å¤´çš„æ–¹å‘ï¼Œç”»
 			right.paintIcon(this, g, snakex[0], snakey[0]);
 		} else if (fx == "L") {
 			left.paintIcon(this, g, snakex[0], snakey[0]);
@@ -75,27 +75,27 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 		} else if (fx == "D") {
 			down.paintIcon(this, g, snakex[0], snakey[0]);
 		}
-		for (int i = 1; i < len; i++) { // »­³ö ÉßµÄÉíÌå
+		for (int i = 1; i < len; i++) { // ç”»å‡º è›‡çš„èº«ä½“
 			body.paintIcon(this, g, snakex[i], snakey[i]);
 		}
 
-		food.paintIcon(this, g, foodx, foody); // »­³ö Ê³Îï
+		food.paintIcon(this, g, foodx, foody); // ç”»å‡º é£Ÿç‰©
 
-		if (isStarted == false && isFailed == false) { // »­³ö ¿ªÊ¼µÄÎÄ×Ö(Ã»¿ªÊ¼ ²¢ÇÒ Ã»Ê§°Ü
+		if (isStarted == false && isFailed == false) { // ç”»å‡º å¼€å§‹çš„æ–‡å­—(æ²¡å¼€å§‹ å¹¶ä¸” æ²¡å¤±è´¥
 			g.setColor(Color.white);
-			g.setFont(new Font("Î¢ÈíÑÅºÚ", Font.BOLD, 40));// £¨×ÖÌåÃû¡¢×ÖÌåÑùÊ½¡¢×ÖÌå´óĞ¡¡£
-			g.drawString("°´¿Õ¸ñ¿ªÊ¼ÓÎÏ·", 300, 350);// Press Space to Start
+			g.setFont(new Font("å¾®è½¯é›…é»‘", Font.BOLD, 40));// ï¼ˆå­—ä½“åã€å­—ä½“æ ·å¼ã€å­—ä½“å¤§å°ã€‚
+			g.drawString("æŒ‰ç©ºæ ¼å¼€å§‹æ¸¸æˆ", 300, 350);// Press Space to Start
 		}
-		if (isFailed == true) { // ÖØĞÂÓÎÏ·µÄÎÄ×Ö
+		if (isFailed == true) { // é‡æ–°æ¸¸æˆçš„æ–‡å­—
 			g.setColor(Color.red);
-			g.setFont(new Font("Î¢ÈíÑÅºÚ", Font.BOLD, 40));
-//			Font f = g.getFont();//±£³ÖÔ­À´¸ñÊ½
-			g.drawString("ÓÎÏ·½áÊø£¬°´¿Õ¸ñÖØĞÂ¿ªÊ¼ÓÎÏ·", 150, 350);// Failed: Press Space to Restart
+			g.setFont(new Font("å¾®è½¯é›…é»‘", Font.BOLD, 40));
+//			Font f = g.getFont();//ä¿æŒåŸæ¥æ ¼å¼
+			g.drawString("æ¸¸æˆç»“æŸï¼ŒæŒ‰ç©ºæ ¼é‡æ–°å¼€å§‹æ¸¸æˆ", 150, 350);// Failed: Press Space to Restart
 		}
 	}
 
-	public void initSnake() { // Ã¿´Î¿ªÊ¼ÓÎÏ·£¬ÉßµÄÊı¾İ³õÊ¼»¯
-		fx = "R"; // Ã¿´Î¿ªÊ¼ÓÎÏ· ³õÊ¼»¯ÉßÍ·
+	public void initSnake() { // æ¯æ¬¡å¼€å§‹æ¸¸æˆï¼Œè›‡çš„æ•°æ®åˆå§‹åŒ–
+		fx = "R"; // æ¯æ¬¡å¼€å§‹æ¸¸æˆ åˆå§‹åŒ–è›‡å¤´
 		len = 3;
 		snakex[0] = 100;
 		snakey[0] = 100;
@@ -103,29 +103,29 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 		snakey[1] = 100;
 		snakex[2] = 50;
 		snakey[2] = 100;
-		foodx = 25 + 25 * rand.nextInt(34); // £¨Ëæ»úÊı0~33
+		foodx = 25 + 25 * rand.nextInt(34); // ï¼ˆéšæœºæ•°0~33
 		foody = 75 + 25 * rand.nextInt(24);
 	}
 
 	@Override
-	public void keyTyped(KeyEvent e) { // ÇÃ¼üÁË£¬Òª×öÊ²Ã´
+	public void keyTyped(KeyEvent e) { // æ•²é”®äº†ï¼Œè¦åšä»€ä¹ˆ
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void keyPressed(KeyEvent e) { // ÇÃµ½µ×£¬
-		int keyCode = e.getKeyCode(); // »ñÈ¡ ¼üµÄÊı×Ö
+	public void keyPressed(KeyEvent e) { // æ•²åˆ°åº•ï¼Œ
+		int keyCode = e.getKeyCode(); // è·å– é”®çš„æ•°å­—
 
-		if (keyCode == KeyEvent.VK_SPACE) { // Èç¹û°´µÄÊÇ ¿Õ¸ñ
-			isStarted = !isStarted; // È¡·´
-			repaint(); // ÖØ»­
+		if (keyCode == KeyEvent.VK_SPACE) { // å¦‚æœæŒ‰çš„æ˜¯ ç©ºæ ¼
+			isStarted = !isStarted; // å–å
+			repaint(); // é‡ç”»
 			
 			if(isStarted) {
 				playBGM();
 			}else {stopBGM();}
 			
-			if (isFailed) { // °´¿Õ¸ñÖØĞÂ¿ªÊ¼
+			if (isFailed) { // æŒ‰ç©ºæ ¼é‡æ–°å¼€å§‹
 				isFailed = false;
 				initSnake();
 			}
@@ -149,27 +149,27 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 	}
 
 	@Override
-	public void keyReleased(KeyEvent e) { // Ì§ÆğÀ´ÁË£¬Òª×öÊ²Ã´
+	public void keyReleased(KeyEvent e) { // æŠ¬èµ·æ¥äº†ï¼Œè¦åšä»€ä¹ˆ
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void actionPerformed(ActionEvent e) { // Êı¾İ´¦Àí£¨±ä»¯£©£¬---Ê±ÖÓÊ±¼äµ½ÁË¾Íµ÷ÓÃÕâ¸ö·½·¨
-		if (isStarted && !isFailed) { // ÊµÏÖ °´ÏÂ¿Õ¸ñ¿ªÊ¼ÔİÍ£
+	public void actionPerformed(ActionEvent e) { // æ•°æ®å¤„ç†ï¼ˆå˜åŒ–ï¼‰ï¼Œ---æ—¶é’Ÿæ—¶é—´åˆ°äº†å°±è°ƒç”¨è¿™ä¸ªæ–¹æ³•
+		if (isStarted && !isFailed) { // å®ç° æŒ‰ä¸‹ç©ºæ ¼å¼€å§‹æš‚åœ
 			
-			fxed = fx;		//·ÀÖ¹ÉßÍù»Ø×²×Ô¼º
+			fxed = fx;		//é˜²æ­¢è›‡å¾€å›æ’è‡ªå·±
 			if(fx=="L"&&fxed=="R"||fx=="U"&&fxed=="D"||fx=="R"&&fxed=="L"||fx=="D"&&fxed=="U") {		
 				fx=fxed;
 			}
 			
-			for (int i = len - 1; i > 0; i--) { // ÉßµÄÉíÌåµÄÒÆ¶¯
+			for (int i = len - 1; i > 0; i--) { // è›‡çš„èº«ä½“çš„ç§»åŠ¨
 				snakex[i] = snakex[i - 1];
 				snakey[i] = snakey[i - 1];
 			}
 			
 			if (fx == "R") {
-				snakex[0] = snakex[0] + 25; // ÉßµÄÍ·µÄÒÆ¶¯
+				snakex[0] = snakex[0] + 25; // è›‡çš„å¤´çš„ç§»åŠ¨
 				if (snakex[0] > 850) {
 					snakex[0] = 25;
 				}
@@ -190,34 +190,34 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 				}
 			}
 
-			if (snakex[0] == foodx && snakey[0] == foody) { // Éß³ÔÊ³Îï£¬ÉíÌå±ä³¤²¢Ë¢ĞÂÊ³Îï
+			if (snakex[0] == foodx && snakey[0] == foody) { // è›‡åƒé£Ÿç‰©ï¼Œèº«ä½“å˜é•¿å¹¶åˆ·æ–°é£Ÿç‰©
 				len++;
 				score++;
 				foodx = 25 + 25 * rand.nextInt(34);
 				foody = 75 + 25 * rand.nextInt(24);
 			}
 
-			for (int i = 1; i < len; i++) { // Í·Åöµ½ÉíÌå¾Í½áÊø
+			for (int i = 1; i < len; i++) { // å¤´ç¢°åˆ°èº«ä½“å°±ç»“æŸ
 				if (snakex[i] == snakex[0] && snakey[i] == snakey[0]) {
 					isFailed = true;
 					isStarted = false;
 				}
 			}
 			
-			if(isFailed){		//ÓÎÏ·½áÊø£¬ÒôÀÖÍ£Ö¹
+			if(isFailed){		//æ¸¸æˆç»“æŸï¼ŒéŸ³ä¹åœæ­¢
 				stopBGM();
 			}
 			
 			repaint();
-			// timer.start(); //µ÷ÓÃÊ±ÖÓ
+			// timer.start(); //è°ƒç”¨æ—¶é’Ÿ
 		}
 
 	}
-	private void loodBGM() {			//¼ÓÔØBGM
+	private void loodBGM() {			//åŠ è½½BGM
 		try {
 			bgm2 = AudioSystem.getClip();
 			InputStream is = this.getClass().getClassLoader().getResourceAsStream("sound/bgm2.wav");
-			AudioInputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(is));		//BufferedInputStreamÄÜ¼ÓÔØÒ»²¿·ÖÊı¾İ½øÈë»º´æÇø£¬¸üÁ÷³©
+			AudioInputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(is));		//BufferedInputStreamèƒ½åŠ è½½ä¸€éƒ¨åˆ†æ•°æ®è¿›å…¥ç¼“å­˜åŒºï¼Œæ›´æµç•…
 			bgm2.open(ais);
 			
 		} catch (LineUnavailableException e) {
@@ -233,15 +233,15 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 	}
 	
 	private void playBGM() {
-		//bgm.start();		/*²¥·ÅÒ»´Î*/
-		bgm2.loop(Clip.LOOP_CONTINUOUSLY);	/*Ñ­»·²¥·Å*/
+		//bgm.start();		/*æ’­æ”¾ä¸€æ¬¡*/
+		bgm2.loop(Clip.LOOP_CONTINUOUSLY);	/*å¾ªç¯æ’­æ”¾*/
 	}
 	
 	private void stopBGM() {
 		bgm2.stop();
 	}
 	
-	private void loodImages() {		// ¼ÓÔØÍ¼Æ¬
+	private void loodImages() {		// åŠ è½½å›¾ç‰‡
 		InputStream is;
 		try {
 			is = getClass().getClassLoader().getResourceAsStream("images/title.jpg");
