@@ -9,6 +9,8 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.AudioInputStream;
@@ -34,8 +36,8 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 	int score = 0;
 	int[] snakex = new int[750];
 	int[] snakey = new int[750];
-	String fx = "R"; // 方向U, D, R, L, //打开程序时 蛇头向右
-	String fxed;		//储存上一次刷新的方向
+	String fx = "R"; // 当前执行方向（U/D/R/L），只能由时钟拍从队列消费
+	final Deque<String> dirQueue = new ArrayDeque<>(); // 按键方向队列：每拍最多消费一个，入队时校验反向
 	boolean isStarted = false;		//没开始
 	boolean isFailed = false;		//没失败
 	Timer timer = new Timer(100, this); // 时钟（多少间隔时间，时间到了找谁处理
@@ -95,8 +97,8 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 	}
 
 	public void initSnake() { // 每次开始游戏，蛇的数据初始化
-		fx = "R"; // 每次开始游戏 初始化蛇头
-		fxed = "R"; // 重置上拍方向，避免重开后残留旧方向导致反向保护放行
+		fx = "R"; // 初始化蛇头朝右
+		dirQueue.clear(); // 清空上一局残留的按键队列
 		len = 3;
 		snakex[0] = 100;
 		snakey[0] = 100;
@@ -133,14 +135,12 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 		}
 		if (isFailed == false && isStarted == true) {
 
-			if (keyCode == KeyEvent.VK_LEFT && !fx.equals("R")) {
-				fx = "L";
-			} else if (keyCode == KeyEvent.VK_RIGHT && !fx.equals("L")) {
-				fx = "R";
-			} else if (keyCode == KeyEvent.VK_UP && !fx.equals("D")) {
-				fx = "U";
-			} else if (keyCode == KeyEvent.VK_DOWN && !fx.equals("U")) {
-				fx = "D";
+			// 方向键不再直接改 fx，而是进入队列（每拍消费一个，禁止相对"最近已接受方向"的回转）
+			switch (keyCode) {
+				case KeyEvent.VK_LEFT -> tryQueue("L");
+				case KeyEvent.VK_RIGHT -> tryQueue("R");
+				case KeyEvent.VK_UP -> tryQueue("U");
+				case KeyEvent.VK_DOWN -> tryQueue("D");
 			}
 			repaint();
 		}
@@ -159,7 +159,7 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 	public void actionPerformed(ActionEvent e) { // 数据处理（变化），---时钟时间到了就调用这个方法
 		if (isStarted && !isFailed) { // 实现 按下空格开始暂停
 			
-			fxed = fx; // 记录本拍实际执行的方向，供按键时的反向保护使用
+			if (!dirQueue.isEmpty()) fx = dirQueue.poll(); // 本拍最多接受一次转向
 			int tailX = snakex[len - 1]; // 记录本拍即将收回的尾巴位置
 			int tailY = snakey[len - 1];
 			for (int i = len - 1; i > 0; i--) { // 蛇的身体的移动
@@ -218,6 +218,22 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 		}
 
 	}
+	private void tryQueue(String cand) { // 校验并接收一个方向按键
+		if (dirQueue.size() >= 2) return; // 最多缓存两拍转向
+		String last = dirQueue.isEmpty() ? fx : dirQueue.peekLast();
+		if (cand.equals(last) || cand.equals(opposite(last))) return;
+		dirQueue.offer(cand);
+	}
+
+	private static String opposite(String d) { // 相反方向
+		return switch (d) {
+			case "L" -> "R";
+			case "R" -> "L";
+			case "U" -> "D";
+			default -> "U";
+		};
+	}
+
 	private boolean onSnake(int x, int y) { // 判断某格子是否被蛇身占用
 		for (int i = 0; i < len; i++) {
 			if (snakex[i] == x && snakey[i] == y) {
