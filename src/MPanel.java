@@ -96,6 +96,7 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 
 	public void initSnake() { // 每次开始游戏，蛇的数据初始化
 		fx = "R"; // 每次开始游戏 初始化蛇头
+		fxed = "R"; // 重置上拍方向，避免重开后残留旧方向导致反向保护放行
 		len = 3;
 		snakex[0] = 100;
 		snakey[0] = 100;
@@ -132,13 +133,13 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 		}
 		if (isFailed == false && isStarted == true) {
 
-			if (keyCode == KeyEvent.VK_LEFT && fxed != "R") {
+			if (keyCode == KeyEvent.VK_LEFT && !fx.equals("R")) {
 				fx = "L";
-			} else if (keyCode == KeyEvent.VK_RIGHT && fxed != "L") {
+			} else if (keyCode == KeyEvent.VK_RIGHT && !fx.equals("L")) {
 				fx = "R";
-			} else if (keyCode == KeyEvent.VK_UP && fxed != "D") {
+			} else if (keyCode == KeyEvent.VK_UP && !fx.equals("D")) {
 				fx = "U";
-			} else if (keyCode == KeyEvent.VK_DOWN && fxed != "U") {
+			} else if (keyCode == KeyEvent.VK_DOWN && !fx.equals("U")) {
 				fx = "D";
 			}
 			repaint();
@@ -158,11 +159,9 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 	public void actionPerformed(ActionEvent e) { // 数据处理（变化），---时钟时间到了就调用这个方法
 		if (isStarted && !isFailed) { // 实现 按下空格开始暂停
 			
-			fxed = fx;		//防止蛇往回撞自己
-			if(fx=="L"&&fxed=="R"||fx=="U"&&fxed=="D"||fx=="R"&&fxed=="L"||fx=="D"&&fxed=="U") {		
-				fx=fxed;
-			}
-			
+			fxed = fx; // 记录本拍实际执行的方向，供按键时的反向保护使用
+			int tailX = snakex[len - 1]; // 记录本拍即将收回的尾巴位置
+			int tailY = snakey[len - 1];
 			for (int i = len - 1; i > 0; i--) { // 蛇的身体的移动
 				snakex[i] = snakex[i - 1];
 				snakey[i] = snakey[i - 1];
@@ -190,11 +189,17 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 				}
 			}
 
-			if (snakex[0] == foodx && snakey[0] == foody) { // 蛇吃食物，身体变长并刷新食物
-				len++;
+			if (snakex[0] == foodx && snakey[0] == foody) { // 蛇吃食物：身体变长且尾巴原地保留，刷新食物并避开蛇身
 				score++;
-				foodx = 25 + 25 * rand.nextInt(34);
-				foody = 75 + 25 * rand.nextInt(24);
+				if (len < snakex.length) { // 容量保护：达到数组上限时只加分不再变长
+					len++;
+					snakex[len - 1] = tailX; // 恢复刚被收缩掉的尾巴，蛇整体加长一格
+					snakey[len - 1] = tailY;
+				}
+				do { // 重新生成食物，避开蛇身所有格子
+					foodx = 25 + 25 * rand.nextInt(34);
+					foody = 75 + 25 * rand.nextInt(24);
+				} while (onSnake(foodx, foody));
 			}
 
 			for (int i = 1; i < len; i++) { // 头碰到身体就结束
@@ -213,6 +218,15 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 		}
 
 	}
+	private boolean onSnake(int x, int y) { // 判断某格子是否被蛇身占用
+		for (int i = 0; i < len; i++) {
+			if (snakex[i] == x && snakey[i] == y) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private void loodBGM() {			//加载BGM
 		try {
 			bgm2 = AudioSystem.getClip();
