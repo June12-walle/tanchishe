@@ -40,6 +40,7 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 	final Deque<String> dirQueue = new ArrayDeque<>(); // 按键方向队列：每拍最多消费一个，入队时校验反向
 	boolean isStarted = false;		//没开始
 	boolean isFailed = false;		//没失败
+	String currentPlayer; // 当前登录玩家（null 表示无档案模式）
 	Timer timer = new Timer(100, this); // 时钟（多少间隔时间，时间到了找谁处理
 	int foodx;
 	int foody;
@@ -55,6 +56,11 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 		this.addKeyListener(this); // 自己监听键盘事件
 		timer.start();
 		loodBGM();
+	}
+
+	public MPanel(String player) { // 带玩家名的入口：死亡时自动记录成绩
+		this();
+		this.currentPlayer = player;
 	}
 
 	public void paintComponent(Graphics g) { // 画笔
@@ -207,6 +213,10 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 					isFailed = true;
 					isStarted = false;
 				}
+			}
+
+			if (currentPlayer != null && score > 0) { // 游戏结束立即把本局成绩写入本地档案
+				PlayerStore.recordScore(currentPlayer, score);
 			}
 			
 			if(isFailed){		//游戏结束，音乐停止
