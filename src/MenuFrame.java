@@ -234,7 +234,13 @@ public class MenuFrame extends JFrame {
 	private void addCloseFallback(LoginFrame login) {
 		login.addWindowListener(new WindowAdapter() {
 			@Override public void windowClosed(WindowEvent e) {
-				if (!login.wasSuccessful()) showAgain();
+				// 登录成功时 onSuccess 已先行跳转（排行榜页/游戏窗），此处兜底把菜单拉回来；
+				// 未成功关闭（返回按钮/X）时同样回菜单 —— 两种情况统一确保菜单可见。
+				SwingUtilities.invokeLater(() -> {
+					if (login.wasSuccessful() && PAGE_RANK.equals(page)) return;  // 已进排行榜页
+					if (login.wasSuccessful() && !isVisible()) showRankOrGame();   // 成功且菜单藏着的兜底
+					if (!login.wasSuccessful()) showAgain();                        // 未登录直接回菜单
+				});
 			}
 		});
 	}
@@ -269,6 +275,13 @@ public class MenuFrame extends JFrame {
 	private void goBack() {
 		if (PAGE_MENU.equals(page)) System.exit(0);
 		else backToMenu();
+	}
+
+	/** 兜底：登录成功但主流程页面未就绪时，先把菜单拉回可见 */
+	private void showRankOrGame() {
+		backToMenu();
+		setVisible(true);
+		requestFocusInWindow();
 	}
 
 	private void showAgain() {

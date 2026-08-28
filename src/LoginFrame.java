@@ -52,7 +52,7 @@ public class LoginFrame extends JFrame {
 		userField.addActionListener(e -> doLogin());
 		passField.addActionListener(e -> doLogin());
 		loginBtn.addActionListener(e -> doLogin());
-		backBtn.addActionListener(e -> dispose());
+		backBtn.addActionListener(e -> dispose()); // 关窗动作统一走 windowClosed 兜底回菜单
 	}
 
 	/** 左侧登录表单 */
