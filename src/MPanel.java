@@ -41,7 +41,9 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 	boolean isStarted = false;		//没开始
 	boolean isFailed = false;		//没失败
 	String currentPlayer; // 当前登录玩家（null 表示无档案模式）
-	Timer timer = new Timer(100, this); // 时钟（多少间隔时间，时间到了找谁处理
+	Runnable exitCallback; // 游戏窗口关闭后回到主菜单的回调
+	boolean wrapWalls = GameSettings.get().wrapWalls; // 边界模式快照（开局时生效）
+	Timer timer; // 间隔在构造器里按设置创建
 	int foodx;
 	int foody;
 	Random rand = new Random();
@@ -54,6 +56,7 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 		initSnake();
 		this.setFocusable(true); // 可以获取焦点（键盘事件
 		this.addKeyListener(this); // 自己监听键盘事件
+		timer = new Timer(GameSettings.get().tickMs, this); // 速度设置在开局时读取
 		timer.start();
 		loodBGM();
 	}
@@ -176,22 +179,22 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 			if (fx == "R") {
 				snakex[0] = snakex[0] + 25; // 蛇的头的移动
 				if (snakex[0] > 850) {
-					snakex[0] = 25;
+					if (wrapWalls) snakex[0] = 25; else { isFailed = true; isStarted = false; stopBGM(); }
 				}
 			} else if (fx == "L") {
 				snakex[0] = snakex[0] - 25;
 				if (snakex[0] < 25) {
-					snakex[0] = 850;
+					if (wrapWalls) snakex[0] = 850; else { isFailed = true; isStarted = false; stopBGM(); }
 				}
 			} else if (fx == "U") {
 				snakey[0] = snakey[0] - 25;
 				if (snakey[0] < 75) {
-					snakey[0] = 650;
+					if (wrapWalls) snakey[0] = 650; else { isFailed = true; isStarted = false; stopBGM(); }
 				}
 			} else if (fx == "D") {
 				snakey[0] = snakey[0] + 25;
 				if (snakey[0] > 650) {
-					snakey[0] = 75;
+					if (wrapWalls) snakey[0] = 75; else { isFailed = true; isStarted = false; stopBGM(); }
 				}
 			}
 
@@ -243,6 +246,8 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 			default -> "U";
 		};
 	}
+
+	public void setExitCallback(Runnable r) { this.exitCallback = r; }
 
 	private boolean onSnake(int x, int y) { // 判断某格子是否被蛇身占用
 		for (int i = 0; i < len; i++) {
