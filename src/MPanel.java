@@ -247,6 +247,12 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 		};
 	}
 
+	/** 离开游戏页时清理：停时钟、停音乐 */
+	public void shutdown() {
+		if (timer != null) timer.stop();
+		try { if (bgm2 != null) bgm2.stop(); } catch (Exception ignored) { }
+	}
+
 	public void setExitCallback(Runnable r) { this.exitCallback = r; }
 
 	private boolean onSnake(int x, int y) { // 判断某格子是否被蛇身占用
@@ -279,6 +285,7 @@ public class MPanel extends JPanel implements KeyListener, ActionListener {
 	
 	private void playBGM() {
 		//bgm.start();		/*播放一次*/
+		if (!GameSettings.get().bgmOn) return; // 设置关闭音乐则不播
 		bgm2.loop(Clip.LOOP_CONTINUOUSLY);	/*循环播放*/
 	}
 	

@@ -9,8 +9,6 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.awt.CardLayout;
 
 import javax.swing.BorderFactory;
@@ -21,42 +19,47 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 /**
- * MenuFrame — 主菜单（键盘 + 鼠标双通道）。
+ * MenuFrame — 唯一主窗口（单窗口多页面，CardLayout 切换）。
  *
- * 按键约定（全页面统一）：
- *   选择：↑/↓ 或 W/S        确认：空格/回车        返回：Esc/Backspace
- * 鼠标约定：悬停即选中；点击选中的项即确认（设置页点击选中的行 = 切换该行设置）。
- * 左上角返回按钮：菜单页显示"退出游戏"，其余页显示"← 返回"。
- *
- * 页面流：MENU → 开始游戏 → 登录窗 → 游戏窗（关闭后回菜单）
- *                → 登录查看排名 → 登录窗 → 排行榜页（↑/↓+空格或鼠标看详情，Esc/Backspace 回菜单）
- *                → 设置 → 设置页（↑/↓/W/S 选行，空格/回车/点击切换，Esc/Backspace 保存返回）
+ * 页面：MENU 主菜单 / LOGIN 登录 / RANK 排行榜 / SETTINGS 设置 / GAME 游戏
+ * 按键约定：↑↓/W S 选择，空格/回车 确认，Esc/Backspace 返回；游戏页按键归 MPanel。
+ * 鼠标：悬停选中、点击确认；左上角返回按钮按页面显示"退出游戏"/"← 返回"。
  */
 public class MenuFrame extends JFrame {
+
+	private static MenuFrame active; // 静态引用：供子页面回调返回主菜单
+	public static void requestBackToMenu() {
+		if (active != null) SwingUtilities.invokeLater(active::backToMenu);
+	}
 
 	private static final String[] ITEMS = { "开始游戏", "登录查看排名", "设置" };
 	private static final String[] ITEM_DESC = { "登录后开始一局贪吃蛇", "查看玩家排行榜与历史成绩", "音乐 / 速度 / 边界模式" };
 
 	private static final String PAGE_MENU = "menu";
-	private static final String PAGE_SETTINGS = "settings";
+	private static final String PAGE_LOGIN = "login";
 	private static final String PAGE_RANK = "rank";
+	private static final String PAGE_SETTINGS = "settings";
+	private static final String PAGE_GAME = "game";
 
 	private String page = PAGE_MENU;
 	private int sel = 0;
+	private String loginPurpose = "game"; // 登录成功后的去向：game / rank
 
 	private final CardLayout cards = new CardLayout();
+	private JPanel cardHost;      // CardLayout 宿主（show() 只能用它）
 	private RankPanel rankPanel;
+	private LoginPanel loginPanel;
+	private JPanel gameHost;
+	private MPanel currentGame;   // 当前游戏页实例
 	private JButton backBtn;
-	private JPanel menuCard;
-	private JPanel cardHost; // CardLayout 宿主容器（show() 必须用它当 parent）
-	private JPanel settingsCard;
 
 	public MenuFrame() {
-		setTitle("贪吃蛇 · 主菜单");
+		setTitle("贪吃蛇");
 		setSize(560, 460);
 		setResizable(false);
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		active = this;
 
 		JPanel root = new JPanel(new BorderLayout());
 		root.add(buildTopBar(), BorderLayout.NORTH);
@@ -76,7 +79,7 @@ public class MenuFrame extends JFrame {
 		bar.setBackground(new Color(0x14181F));
 		bar.setBorder(BorderFactory.createEmptyBorder(6, 8, 0, 8));
 		backBtn = new JButton("退出游戏");
-		backBtn.setFocusable(false); // 点击后键盘事件仍归窗口
+		backBtn.setFocusable(false);
 		backBtn.setBackground(new Color(0x232A38));
 		backBtn.setForeground(new Color(0xC9D6F2));
 		backBtn.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
@@ -91,11 +94,11 @@ public class MenuFrame extends JFrame {
 	private JPanel buildCards() {
 		JPanel container = cardHost = new JPanel(cards);
 		container.setBackground(new Color(0x14181F));
-		menuCard = buildMenuCard();
-		settingsCard = buildSettingsCard();
-		container.add(menuCard, PAGE_MENU);
-		container.add(settingsCard, PAGE_SETTINGS);
+		container.add(buildMenuCard(), PAGE_MENU);
+		container.add(buildLoginCard(), PAGE_LOGIN);
 		container.add(buildRankCard(), PAGE_RANK);
+		container.add(buildSettingsCard(), PAGE_SETTINGS);
+		container.add(buildGameCard(), PAGE_GAME);
 		return container;
 	}
 
@@ -119,6 +122,30 @@ public class MenuFrame extends JFrame {
 		return p;
 	}
 
+	private JPanel buildLoginCard() {
+		loginPanel = new LoginPanel(() -> onLoginSuccess());
+		JPanel p = new JPanel(new BorderLayout());
+		p.setBackground(new Color(0x14181F));
+		p.add(loginPanel, BorderLayout.CENTER);
+		JLabel hint = new JLabel("Esc/退格 返回主菜单", JLabel.CENTER);
+		hint.setForeground(new Color(0x8A93A8));
+		hint.setBorder(BorderFactory.createEmptyBorder(6, 0, 8, 0));
+		p.add(hint, BorderLayout.SOUTH);
+		return p;
+	}
+
+	private JPanel buildRankCard() {
+		rankPanel = new RankPanel();
+		JPanel p = new JPanel(new BorderLayout());
+		p.setBackground(new Color(0x14181F));
+		p.add(rankPanel, BorderLayout.CENTER);
+		JLabel hint = new JLabel("↑↓/W S 选择　空格/回车 查看详情　Esc/退格 返回主菜单", JLabel.CENTER);
+		hint.setForeground(new Color(0x8A93A8));
+		hint.setBorder(BorderFactory.createEmptyBorder(6, 0, 8, 0));
+		p.add(hint, BorderLayout.SOUTH);
+		return p;
+	}
+
 	private JPanel buildSettingsCard() {
 		JPanel p = new JPanel() {
 			@Override protected void paintComponent(Graphics g) { drawSettings(g); }
@@ -138,16 +165,13 @@ public class MenuFrame extends JFrame {
 		return p;
 	}
 
-	private JPanel buildRankCard() {
-		rankPanel = new RankPanel();
-		JPanel p = new JPanel(new BorderLayout());
-		p.setBackground(new Color(0x14181F));
-		p.add(rankPanel, BorderLayout.CENTER);
-		JLabel hint = new JLabel("↑↓/W S 选择　空格/回车 查看详情　Esc/退格 返回主菜单", JLabel.CENTER);
-		hint.setForeground(new Color(0x8A93A8));
-		hint.setBorder(BorderFactory.createEmptyBorder(6, 0, 8, 0));
-		p.add(hint, BorderLayout.SOUTH);
-		return p;
+	private JPanel buildGameCard() {
+		gameHost = new JPanel(new BorderLayout());
+		gameHost.setBackground(Color.WHITE);
+		JLabel placeholder = new JLabel("从主菜单选择「开始游戏」进入", JLabel.CENTER);
+		placeholder.setForeground(new Color(0x8A93A8));
+		gameHost.add(placeholder, BorderLayout.CENTER);
+		return gameHost;
 	}
 
 	// ---------- 命中检测 ----------
@@ -167,12 +191,19 @@ public class MenuFrame extends JFrame {
 	// ---------- 按键路由 ----------
 	private void handleKey(KeyEvent e) {
 		int code = e.getKeyCode();
+		if (PAGE_GAME.equals(page)) {
+			// 游戏页：其余按键归 MPanel（焦点在它身上时本监听器通常收不到）
+			if (code == KeyEvent.VK_ESCAPE || code == KeyEvent.VK_BACK_SPACE) exitGameToMenu();
+			return;
+		}
 		switch (page) {
 			case PAGE_MENU -> menuKey(code);
 			case PAGE_SETTINGS -> settingsKey(code);
 			case PAGE_RANK -> rankKey(code);
+			case PAGE_LOGIN -> { if (code == KeyEvent.VK_ESCAPE || code == KeyEvent.VK_BACK_SPACE) backToMenu(); }
 			default -> { }
 		}
+		repaint();
 	}
 
 	private void menuKey(int code) {
@@ -183,7 +214,6 @@ public class MenuFrame extends JFrame {
 			case KeyEvent.VK_ESCAPE, KeyEvent.VK_BACK_SPACE -> System.exit(0);
 			default -> { }
 		}
-		repaint();
 	}
 
 	private void settingsKey(int code) {
@@ -194,11 +224,10 @@ public class MenuFrame extends JFrame {
 			case KeyEvent.VK_ESCAPE, KeyEvent.VK_BACK_SPACE -> backToMenu();
 			default -> { }
 		}
-		repaint();
 	}
 
 	private void rankKey(int code) {
-		if (rankPanel.isDetailOpen()) { // 详情弹窗是模态的；弹窗关闭后状态复位
+		if (rankPanel.isDetailOpen()) {
 			if (code == KeyEvent.VK_ESCAPE || code == KeyEvent.VK_BACK_SPACE) rankPanel.closeDetail();
 			return;
 		}
@@ -214,36 +243,50 @@ public class MenuFrame extends JFrame {
 	// ---------- 页面动作 ----------
 	private void activate() {
 		switch (sel) {
-			case 0 -> { // 开始游戏：登录成功 → 开游戏窗（关闭后回菜单；直接关登录窗也回菜单）
-				setVisible(false);
-				LoginFrame login = new LoginFrame(() -> openGameWindow());
-				addCloseFallback(login);
-				login.setVisible(true);
-			}
-			case 1 -> { // 登录查看排名
-				setVisible(false);
-				LoginFrame login = new LoginFrame(this::showRankPage);
-				addCloseFallback(login);
-				login.setVisible(true);
+			case 0 -> startGameFlow();
+			case 1 -> {
+				if (LoginPanel.lastLoginUser != null) enterRank();
+				else { loginPurpose = "rank"; loginPanel.prefill(LoginPanel.lastLoginUser); showPage(PAGE_LOGIN, "贪吃蛇 · 登录（查看排名）"); }
 			}
 			case 2 -> showPage(PAGE_SETTINGS, "贪吃蛇 · 设置");
 			default -> { }
 		}
 	}
 
-	/** 登录窗被用户直接关闭（未登录）时，回主菜单，避免窗口全关进程假死 */
-	private void addCloseFallback(LoginFrame login) {
-		login.addWindowListener(new WindowAdapter() {
-			@Override public void windowClosed(WindowEvent e) {
-				// 登录成功时 onSuccess 已先行跳转（排行榜页/游戏窗），此处兜底把菜单拉回来；
-				// 未成功关闭（返回按钮/X）时同样回菜单 —— 两种情况统一确保菜单可见。
-				SwingUtilities.invokeLater(() -> {
-					if (login.wasSuccessful() && PAGE_RANK.equals(page)) return;  // 已进排行榜页
-					if (login.wasSuccessful() && !isVisible()) showRankOrGame();   // 成功且菜单藏着的兜底
-					if (!login.wasSuccessful()) showAgain();                        // 未登录直接回菜单
-				});
-			}
-		});
+	private void startGameFlow() {
+		if (LoginPanel.lastLoginUser != null) { startGame(LoginPanel.lastLoginUser); return; }
+		loginPurpose = "game";
+		loginPanel.clearPassword();
+		showPage(PAGE_LOGIN, "贪吃蛇 · 登录（开始游戏）");
+	}
+
+	/** 登录成功：按进入登录页前的目的跳转 */
+	private void onLoginSuccess() {
+		if ("rank".equals(loginPurpose)) enterRank();
+		else startGame(LoginPanel.lastLoginUser);
+	}
+
+	private void enterRank() {
+		rankPanel.reload();
+		showPage(PAGE_RANK, "贪吃蛇 · 排行榜");
+	}
+
+	/** 同一窗口内开一局：每次都换新的 MPanel 实例（新开局） */
+	private void startGame(String user) {
+		if (currentGame != null) currentGame.shutdown();
+		currentGame = new MPanel(user);
+		gameHost.removeAll();
+		gameHost.add(currentGame, BorderLayout.CENTER);
+		gameHost.revalidate();
+		gameHost.repaint();
+		showPage(PAGE_GAME, "贪吃蛇 · 玩家：" + user);
+		SwingUtilities.invokeLater(currentGame::requestFocusInWindow);
+	}
+
+	/** 游戏中返回主菜单：停时钟停音乐，回菜单页 */
+	private void exitGameToMenu() {
+		if (currentGame != null) currentGame.shutdown();
+		backToMenu();
 	}
 
 	private void toggleSetting(int row) {
@@ -259,60 +302,31 @@ public class MenuFrame extends JFrame {
 
 	private void showPage(String card, String title) {
 		page = card;
-		cards.show(cardHost, card); // 注意 parent 必须是 cards 的宿主容器
+		cards.show(cardHost, card); // parent 必须是 cards 的宿主容器
 		backBtn.setText(PAGE_MENU.equals(card) ? "退出游戏" : "← 返回");
 		setTitle(title);
+		// 按页面调整窗口尺寸并居中
+		Dimension d = switch (card) {
+			case PAGE_GAME -> new Dimension(906, 762);
+			case PAGE_RANK -> new Dimension(780, 520);
+			default -> new Dimension(560, 460);
+		};
+		if (!d.equals(getSize())) { setSize(d); setLocationRelativeTo(null); }
 		repaint();
 		requestFocusInWindow();
 	}
 
 	private void backToMenu() {
 		rankPanel.closeDetail();
-		showPage(PAGE_MENU, "贪吃蛇 · 主菜单");
 		sel = 0;
+		showPage(PAGE_MENU, "贪吃蛇");
 	}
 
 	/** 左上角按钮 / Esc / Backspace 的统一返回行为 */
 	private void goBack() {
+		if (PAGE_GAME.equals(page)) { exitGameToMenu(); return; }
 		if (PAGE_MENU.equals(page)) System.exit(0);
 		else backToMenu();
-	}
-
-	/** 兜底：登录成功但主流程页面未就绪时，先把菜单拉回可见 */
-	private void showRankOrGame() {
-		backToMenu();
-		setVisible(true);
-		requestFocusInWindow();
-	}
-
-	private void showAgain() {
-		SwingUtilities.invokeLater(() -> {
-			backToMenu();
-			setVisible(true);
-			requestFocusInWindow();
-		});
-	}
-
-	/** 登录成功后的排行榜页 */
-	private void showRankPage() {
-		setVisible(true);
-		rankPanel.reload();
-		showPage(PAGE_RANK, "贪吃蛇 · 排行榜");
-	}
-
-	/** 从菜单直接开一局（登录成功后）；游戏窗关闭自动回菜单 */
-	private void openGameWindow() {
-		String user = LoginFrame.lastLoginUser;
-		JFrame game = new JFrame("贪吃蛇 · 玩家：" + user);
-		game.setBounds(10, 10, 900, 720);
-		game.setResizable(false);
-		game.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		game.addWindowListener(new WindowAdapter() {
-			@Override public void windowClosed(WindowEvent e) { showAgain(); }
-		});
-		game.add(new MPanel(user));
-		game.setLocationRelativeTo(null);
-		game.setVisible(true);
 	}
 
 	// ---------- 绘制 ----------
