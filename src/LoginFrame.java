@@ -15,23 +15,23 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 /**
- * LoginFrame — 登录窗口：左侧登录表单，右侧嵌入排行榜面板。
- * 通过回调 onSuccess 通知调用方（MenuFrame），不再自己决定下一步。
- * lastLoginUser 记录最近一次登录成功的用户名，供"开始游戏"流程复用。
+ * LoginFrame — 登录窗口：左侧登录表单，右侧排行榜面板。
+ * 通过回调 onSuccess 通知调用方；wasSuccessful() 供关闭兜底判断。
+ * lastLoginUser 记录最近一次登录成功的用户名。
  */
 public class LoginFrame extends JFrame {
 
-	public static String lastLoginUser = null; // 最近登录成功的玩家名
+	public static String lastLoginUser = null;
 
 	private final JTextField userField = new JTextField(14);
 	private final JPasswordField passField = new JPasswordField(14);
 	private final JLabel msgLabel = new JLabel(" ");
 	private final JButton loginBtn = new JButton("登录 / 注册");
-	private final JButton backBtn = new JButton("返回");
+	private final JButton backBtn = new JButton("← 返回");
 
 	private final RankPanel rankPanel;
-	private final Runnable onSuccess; // 登录成功后的动作（由调用方定义）
-	private boolean loggedIn = false;
+	private final Runnable onSuccess;
+	private boolean success = false;
 
 	public LoginFrame(Runnable onSuccess) {
 		this.onSuccess = onSuccess;
@@ -99,7 +99,7 @@ public class LoginFrame extends JFrame {
 		return p;
 	}
 
-	/** 登录入口：校验→PlayerStore→回调 */
+	/** 登录入口：校验 → PlayerStore → 回调 */
 	private void doLogin() {
 		String user = userField.getText().trim();
 		String pass = new String(passField.getPassword());
@@ -127,13 +127,15 @@ public class LoginFrame extends JFrame {
 
 	private void succeed(String user, String tip) {
 		lastLoginUser = user;
-		loggedIn = true;
+		success = true;
 		if (tip != null) {
 			msgLabel.setText(tip);
 			msgLabel.setForeground(new Color(0x1A9E6E));
 		}
-		rankPanel.reload();      // 登录后右侧榜单即时刷新
+		rankPanel.reload();
 		if (onSuccess != null) onSuccess.run();
-		dispose();               // 关闭登录窗（回调已决定去向）
+		dispose();
 	}
+
+	public boolean wasSuccessful() { return success; }
 }
