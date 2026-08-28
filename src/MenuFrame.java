@@ -48,6 +48,7 @@ public class MenuFrame extends JFrame {
 	private RankPanel rankPanel;
 	private JButton backBtn;
 	private JPanel menuCard;
+	private JPanel cardHost; // CardLayout 宿主容器（show() 必须用它当 parent）
 	private JPanel settingsCard;
 
 	public MenuFrame() {
@@ -88,7 +89,7 @@ public class MenuFrame extends JFrame {
 	}
 
 	private JPanel buildCards() {
-		JPanel container = new JPanel(cards);
+		JPanel container = cardHost = new JPanel(cards);
 		container.setBackground(new Color(0x14181F));
 		menuCard = buildMenuCard();
 		settingsCard = buildSettingsCard();
@@ -258,7 +259,7 @@ public class MenuFrame extends JFrame {
 
 	private void showPage(String card, String title) {
 		page = card;
-		cards.show(getContentPane(), card);
+		cards.show(cardHost, card); // 注意 parent 必须是 cards 的宿主容器
 		backBtn.setText(PAGE_MENU.equals(card) ? "退出游戏" : "← 返回");
 		setTitle(title);
 		repaint();
